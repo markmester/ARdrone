@@ -10,7 +10,7 @@ def get_config(path: str) -> dict:
         return yaml.safe_load(f.read())
 
 
-def setup_logging(default_path='config/config.yml', default_level=logging.INFO):
+def setup_logging(default_path='config/config.yml', default_level=logging.INFO) -> None:
     """Setup logging configuration
     """
     path = default_path

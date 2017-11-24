@@ -1,3 +1,4 @@
+# drone connection settings
 connection:
   src_ip: ""
   dst_ip: ""
@@ -6,6 +7,7 @@ connection:
   src_mac: ""
   dst_mac: ""
 
+# drone command payloads
 commands:
   #  ATREF commands Controls the basic behaviour of the drone (take-off/landing, emergency stop/reset)
   AT_REF:
@@ -27,6 +29,7 @@ commands:
   AT_COMWDG:
     tbd: ""
 
+# logging setup
 logging:
   version: 1
   disable_existing_loggers: False

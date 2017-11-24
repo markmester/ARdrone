@@ -1,6 +1,7 @@
 from utilities import get_config, setup_logging
 import logging
 
+
 setup_logging()
 ARdrone_logger = logging.getLogger("ARdrone-controller")
 
