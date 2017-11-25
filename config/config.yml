@@ -23,7 +23,7 @@ commands:
   AT_CALIB:
     tbd: ""
   AT_CONFIG:
-    tbd: ""
+    connect: "AT*CONFIG=605,"network:owner_mac","01:23:45:67:89:ab\r"
   AT_CONFIG_TDS:
     tbd: ""
   AT_COMWDG:
