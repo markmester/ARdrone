@@ -3,14 +3,14 @@ import os
 import logging.config
 
 
-def get_config(path: str) -> dict:
+def get_config(path):
     """Load project configuration
     """
     with open(path, "r") as f:
         return yaml.safe_load(f.read())
 
 
-def setup_logging(default_path='config/config.yml', default_level=logging.INFO) -> None:
+def setup_logging(default_path='config/config.yml', default_level=logging.INFO):
     """Setup logging configuration
     """
     path = default_path
