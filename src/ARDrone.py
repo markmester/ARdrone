@@ -12,9 +12,6 @@ class ARDrone:
         self.src_mac = None
         self.dst_mac = None
 
-    def connect(self):
-        pass
-
     def command(self, command, seq):
         spoofed_packet = Ether(src=self.src_mac,
                                dst=self.dst_mac) / IP(src=self.src_ip,

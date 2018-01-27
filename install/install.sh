@@ -6,4 +6,4 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 apt install python3 python3-pip
-pip3 install scapy-python3 pyyaml
+pip3 install scapy-python3 pyyaml rq

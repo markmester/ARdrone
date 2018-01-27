@@ -7,7 +7,7 @@ connection:
   dst_port: 5556
   src_mac: "dc:a9:04:7f:ed:94"
   dst_mac: "A0:14:3D:A5:85:2A"
-
+  packet_rate: 30 # ms
 # drone command payloads
 commands:
   #  ATREF commands Controls the basic behaviour of the drone (take-off/landing, emergency stop/reset)
