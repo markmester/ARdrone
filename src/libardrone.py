@@ -56,6 +56,7 @@ class ARDrone(object):
         self.com_watchdog_timer = threading.Timer(self.timer_t, self.commwdg)
         self.lock = threading.Lock()
         self.speed = 0.2
+        self.at(at_config, "video:video_channel", "2")
         self.at(at_config, "general:navdata_demo", "TRUE")
         self.video_pipe, video_pipe_other = multiprocessing.Pipe()
         self.nav_pipe, nav_pipe_other = multiprocessing.Pipe()
@@ -70,6 +71,12 @@ class ARDrone(object):
         self.image = ""
         self.navdata = dict()
         self.time = 0
+
+    def switch_camera_vertical(self):
+        self.at(at_config, "video:video_channel", "1")
+
+    def switch_camera_horizontal(self):
+        self.at(at_config, "video:video_channel", "2")
 
     def takeoff(self):
         """Make the drone takeoff."""

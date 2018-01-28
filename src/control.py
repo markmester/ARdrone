@@ -1,24 +1,7 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2011 Bastian Venthur
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
+# Original script by Bastian Venthur
+
 
 
 """Demo app for the AR.Drone.
@@ -28,9 +11,9 @@ stream.
 """
 
 
-import pygame
-import cv2
-import numpy as np
+import pygame  # display/controls
+import cv2  # video streaming
+import numpy as np  # np.rot90
 
 import libardrone
 
@@ -101,17 +84,17 @@ def main():
                     drone.speed = 0.9
                 elif event.key == pygame.K_0:
                     drone.speed = 1.0
+                elif event.key == pygame.K_o:
+                    drone.switch_camera_horizontal()
+                elif event.key == pygame.K_p:
+                    drone.switch_camera_vertical()
 
         try:
-
-            # surface = pygame.image.fromstring(drone.image, (W, H), 'RGB')
             # battery status
             hud_color = (255, 0, 0) if drone.navdata.get('drone_state', dict()).get('emergency_mask', 1) else (10, 10, 255)
             bat = drone.navdata.get(0, dict()).get('battery', 0)
             f = pygame.font.Font(None, 20)
             hud = f.render('Battery: %i%%' % bat, True, hud_color)
-            # # screen.blit(surface, (0, 0))
-            # screen.blit(hud, (10, 10))
             screen.fill([0, 0, 0])
             frame = cv2.cvtColor(drone.image, cv2.COLOR_BGR2RGB)
             frame = np.rot90(frame)
@@ -130,6 +113,7 @@ def main():
     print "Shutting down...",
     drone.halt()
     print "Ok."
+
 
 if __name__ == '__main__':
     main()
