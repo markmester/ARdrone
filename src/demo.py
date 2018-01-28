@@ -29,6 +29,8 @@ stream.
 
 
 import pygame
+import cv2
+import numpy as np
 
 import libardrone
 
@@ -101,15 +103,24 @@ def main():
                     drone.speed = 1.0
 
         try:
-            surface = pygame.image.fromstring(drone.image, (W, H), 'RGB')
+
+            # surface = pygame.image.fromstring(drone.image, (W, H), 'RGB')
             # battery status
             hud_color = (255, 0, 0) if drone.navdata.get('drone_state', dict()).get('emergency_mask', 1) else (10, 10, 255)
             bat = drone.navdata.get(0, dict()).get('battery', 0)
             f = pygame.font.Font(None, 20)
             hud = f.render('Battery: %i%%' % bat, True, hud_color)
-            screen.blit(surface, (0, 0))
+            # # screen.blit(surface, (0, 0))
+            # screen.blit(hud, (10, 10))
+            screen.fill([0, 0, 0])
+            frame = cv2.cvtColor(drone.image, cv2.COLOR_BGR2RGB)
+            frame = np.rot90(frame)
+            frame = pygame.surfarray.make_surface(frame)
+            screen.blit(frame, (0, 0))
             screen.blit(hud, (10, 10))
-        except:
+            pygame.display.update()
+
+        except Exception as e:
             pass
 
         pygame.display.flip()
