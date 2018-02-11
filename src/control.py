@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# Original script by Bastian Venthur
-
-
-
 """Demo app for the AR.Drone.
 
 This simple application allows to control the drone and see the drone's video
@@ -14,8 +10,15 @@ stream.
 import pygame  # display/controls
 import cv2  # video streaming
 import numpy as np  # np.rot90
+import logging
 
 import libardrone
+import utilities
+
+
+############# Setup ################
+utilities.setup()
+logger = logging.getLogger("ARdrone-controller")
 
 
 def main():
@@ -40,6 +43,7 @@ def main():
                     drone.takeoff()
                 elif event.key == pygame.K_SPACE:
                     drone.land()
+
                 # emergency
                 elif event.key == pygame.K_BACKSPACE:
                     drone.reset()
@@ -84,6 +88,7 @@ def main():
                     drone.speed = 0.9
                 elif event.key == pygame.K_0:
                     drone.speed = 1.0
+                    logger.info("Set speed to %s", drone.speed)
                 elif event.key == pygame.K_o:
                     drone.switch_camera_horizontal()
                 elif event.key == pygame.K_p:
@@ -110,9 +115,8 @@ def main():
         clock.tick(50)
         pygame.display.set_caption("FPS: %.2f" % clock.get_fps())
 
-    print "Shutting down...",
+    logger.info("Shutting down...")
     drone.halt()
-    print "Ok."
 
 
 if __name__ == '__main__':

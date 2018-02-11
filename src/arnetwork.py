@@ -1,23 +1,3 @@
-# Copyright (c) 2011 Bastian Venthur
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
 
 """
 This module provides access to the data provided by the AR.Drone.
@@ -28,8 +8,14 @@ import socket
 import threading
 import multiprocessing
 import cv2
+import logging
 
 import libardrone
+import utilities
+
+############# Setup ################
+utilities.setup()
+logger = logging.getLogger("ARdrone-controller")
 
 
 class ARDroneNetworkProcess(multiprocessing.Process):
@@ -48,7 +34,7 @@ class ARDroneNetworkProcess(multiprocessing.Process):
         nav_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         nav_socket.setblocking(0)
         nav_socket.bind(('', libardrone.ARDRONE_NAVDATA_PORT))
-        nav_socket.sendto("\x01\x00\x00\x00", ('192.168.1.1', libardrone.ARDRONE_NAVDATA_PORT))
+        nav_socket.sendto("\x01\x00\x00\x00", (libardrone.ARDRONE_ADDR, libardrone.ARDRONE_NAVDATA_PORT))
 
         stopping = False
         while not stopping:
@@ -84,7 +70,7 @@ class ARDroneVideoProcess(multiprocessing.Process):
         self.com_pipe = com_pipe
 
     def run(self):
-        cam = cv2.VideoCapture('tcp://192.168.1.1:{}'.format(libardrone.ARDRONE_VIDEO_PORT))
+        cam = cv2.VideoCapture('tcp://{}:{}'.format(libardrone.ARDRONE_ADDR, libardrone.ARDRONE_VIDEO_PORT))
         stopping = False
 
         while not stopping:
@@ -106,7 +92,7 @@ class IPCThread(threading.Thread):
     """Inter Process Communication Thread.
 
     This thread collects the data from the ARDroneNetworkProcess and forwards
-    it to the ARDreone.
+    it to the ARDrone.
     """
 
     def __init__(self, drone):
