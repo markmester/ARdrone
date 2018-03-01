@@ -11,6 +11,7 @@ import pygame  # display/controls
 import cv2  # video streaming
 import numpy as np  # np.rot90
 import logging
+import json
 
 import libardrone
 import utilities
@@ -21,7 +22,8 @@ utilities.setup()
 logger = logging.getLogger("ARdrone-controller")
 
 
-def main():
+def main(collect=False):
+    data = []
     pygame.init()
     W, H = 320, 240
     screen = pygame.display.set_mode((W, H))
@@ -93,6 +95,8 @@ def main():
                     drone.switch_camera_horizontal()
                 elif event.key == pygame.K_p:
                     drone.switch_camera_vertical()
+                elif event.key == pygame.K_i:
+                    drone.switch_camera_external()
 
         try:
             # battery status
@@ -101,15 +105,23 @@ def main():
             f = pygame.font.Font(None, 20)
             hud = f.render('Battery: %i%%' % bat, True, hud_color)
             screen.fill([0, 0, 0])
-            frame = cv2.cvtColor(drone.image, cv2.COLOR_BGR2RGB)
-            frame = np.rot90(frame)
-            frame = pygame.surfarray.make_surface(frame)
-            screen.blit(frame, (0, 0))
-            screen.blit(hud, (10, 10))
+
+            frame = drone.get_camera()
+            if frame is not None:  #explicity look for None as NP arrays will error out if non-empty and checking for truthfullness
+                frame = cv2.cvtColor(drone.ext_image, cv2.COLOR_BGR2RGB)
+                frame = np.rot90(frame)
+                frame = pygame.surfarray.make_surface(frame)
+                screen.blit(frame, (0, 0))
+                screen.blit(hud, (10, 10))
+
             pygame.display.update()
 
-        except Exception as e:
-            pass
+            # testing
+            if collect:
+                data.append(drone.navdata.get(0, dict()))
+
+        except Exception as exc:
+            logger.error(exc)
 
         pygame.display.flip()
         clock.tick(50)
@@ -118,6 +130,10 @@ def main():
     logger.info("Shutting down...")
     drone.halt()
 
+    if collect:
+        json.dump(data, file("../data/navdata.json", "w+"), indent=4)
+
 
 if __name__ == '__main__':
     main()
+

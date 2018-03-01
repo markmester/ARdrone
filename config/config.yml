@@ -6,6 +6,13 @@ drone:
   video_port: 5555
   command_port: 5556
 
+  external_cam:
+      active: False
+      protocol: udp
+      port: 1234
+      image_width: 480
+      image_height: 360
+
 # logging setup
 logging:
   version: 1

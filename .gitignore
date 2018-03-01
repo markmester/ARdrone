@@ -1,4 +1,4 @@
-.idea/
-logs/
-*.pyc
+**.idea/
+**logs/
+**.pyc
 __pycache__/

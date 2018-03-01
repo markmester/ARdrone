@@ -5,5 +5,9 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-apt install python3 python3-pip
-pip3 install scapy-python3 pyyaml rq
+apt install \
+    python-influxdb \
+    python-pip
+
+pip install \
+    opencv-python

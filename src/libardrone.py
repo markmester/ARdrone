@@ -21,6 +21,11 @@ ARDRONE_ADDR = config['drone']['address']
 ARDRONE_NAVDATA_PORT = config['drone']['navdata_port']
 ARDRONE_VIDEO_PORT = config['drone']['video_port']
 ARDRONE_COMMAND_PORT = config['drone']['command_port']
+ARDRONE_EXT_CAM = config['drone']['external_cam']['active']
+ARDRONE_EXT_CAM_PROTO = config['drone']['external_cam']['protocol']
+ARDRONE_EXT_CAM_PORT = config['drone']['external_cam']['port']
+ARDRONE_EXT_CAM_WIDTH = config['drone']['external_cam']['image_width']
+ARDRONE_EXT_CAM_HEIGHT = config['drone']['external_cam']['image_height']
 
 
 class ARDrone(object):
@@ -31,6 +36,7 @@ class ARDrone(object):
     """
 
     def __init__(self):
+        # starting params
         self.seq_nr = 1
         self.timer_t = 0.2
         self.com_watchdog_timer = threading.Timer(self.timer_t, self.commwdg)
@@ -38,25 +44,51 @@ class ARDrone(object):
         self.speed = 0.2
         self.at(at_config, "video:video_channel", "2")
         self.at(at_config, "general:navdata_demo", "TRUE")
-        self.video_pipe, video_pipe_other = multiprocessing.Pipe()
-        self.nav_pipe, nav_pipe_other = multiprocessing.Pipe()
-        self.com_pipe1, com_pipe_other1 = multiprocessing.Pipe()
-        self.com_pipe2, com_pipe_other2 = multiprocessing.Pipe()
-        self.nav_process = arnetwork.ARDroneNetworkProcess(nav_pipe_other, com_pipe_other1)
-        self.video_process = arnetwork.ARDroneVideoProcess(video_pipe_other, com_pipe_other2)
-        self.nav_process.start()
-        self.video_process.start()
-        self.ipc_thread = arnetwork.IPCThread(self)
-        self.ipc_thread.start()
-        self.image = ""
+        self.int_image = None
+        self.ext_image = None
+        self.camera = 1  # 1 for internal, 0 for external
         self.navdata = dict()
         self.time = 0
 
+        # nav data process
+        self.nav_pipe, nav_pipe_other = multiprocessing.Pipe()
+        self.com_pipe1, com_pipe_other1 = multiprocessing.Pipe()
+        self.nav_process = arnetwork.ARDroneNetworkProcess(nav_pipe_other, com_pipe_other1)
+        self.nav_process.start()
+
+        # internal video feed process
+        self.video_pipe, video_pipe_other = multiprocessing.Pipe()
+        self.com_pipe2, com_pipe_other2 = multiprocessing.Pipe()
+        self.video_process = arnetwork.ARDroneVideoProcess(video_pipe_other, com_pipe_other2)
+        self.video_process.start()
+
+        # external video feed process
+        if ARDRONE_EXT_CAM:
+            self.ext_video_pipe, ext_video_pipe_other = multiprocessing.Pipe()
+            self.com_pipe3, com_pipe_other3 = multiprocessing.Pipe()
+            self.ext_video_process = arnetwork.ARDroneExternalVideoProcess(ext_video_pipe_other, com_pipe_other3)
+            self.ext_video_process.start()
+
+        # IPC thread
+        self.ipc_thread = arnetwork.IPCThread(self)
+        self.ipc_thread.start()
+
     def switch_camera_vertical(self):
         self.at(at_config, "video:video_channel", "1")
+        self.camera = 1
 
     def switch_camera_horizontal(self):
         self.at(at_config, "video:video_channel", "2")
+        self.camera = 1
+
+    def switch_camera_external(self):
+        if ARDRONE_EXT_CAM:
+            self.camera = 0
+        else:
+            print "External video feed has not been configured and initialized."
+
+    def get_camera(self):
+        return self.int_image if self.camera else self.ext_image
 
     def takeoff(self):
         """Make the drone takeoff."""
@@ -155,10 +187,15 @@ class ARDrone(object):
         self.com_watchdog_timer.cancel()
         self.com_pipe1.send('die!')
         self.com_pipe2.send('die!')
+        if ARDRONE_EXT_CAM:
+            self.com_pipe3.send('die!')
         self.nav_process.terminate()
         self.nav_process.join()
         self.video_process.terminate()
         self.video_process.join()
+        if ARDRONE_EXT_CAM:
+            self.ext_video_process.terminate()
+            self.ext_video_process.join()
         self.ipc_thread.stop()
         self.ipc_thread.join()
         self.lock.release()

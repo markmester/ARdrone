@@ -9,6 +9,8 @@ import threading
 import multiprocessing
 import cv2
 import logging
+import subprocess
+import numpy
 
 import libardrone
 import utilities
@@ -88,6 +90,51 @@ class ARDroneVideoProcess(multiprocessing.Process):
         cv2.destroyAllWindows()
 
 
+class ARDroneExternalVideoProcess(multiprocessing.Process):
+    """ARDrone External Camera Video Process.
+
+    This process collects data from the external video port and sends it to the IPCThread.
+    """
+
+    def __init__(self, video_pipe, com_pipe):
+        multiprocessing.Process.__init__(self)
+        self.video_pipe = video_pipe
+        self.com_pipe = com_pipe
+
+    def run(self):
+        FFMPEG_BIN = "ffmpeg"
+        command = [FFMPEG_BIN,
+                   '-i', '{}://0.0.0.0:{}'.format(libardrone.ARDRONE_EXT_CAM_PROTO, libardrone.ARDRONE_EXT_CAM_PORT),
+                   '-err_detect', 'ignore_err',
+                   '-pix_fmt', 'bgr24',  # opencv requires bgr24 pixel format.
+                   '-vcodec', 'rawvideo',
+                   '-an', '-sn',  # we want to disable audio processing (there is no audio)
+                   '-f', 'image2pipe', '-']
+        pipe = subprocess.Popen(command, stdout=subprocess.PIPE, bufsize=10 ** 8)
+        stopping = False
+
+        while not stopping:
+            # check for kill switch
+            if self.com_pipe.poll():
+                _ = self.com_pipe.recv()
+                stopping = True
+                pipe.terminate()
+
+            # Capture frame-by-frame
+            raw_image = pipe.stdout.read(libardrone.ARDRONE_EXT_CAM_WIDTH * libardrone.ARDRONE_EXT_CAM_HEIGHT * 3)
+            # transform the byte read into a numpy array
+            frame = numpy.fromstring(raw_image, dtype='uint8')
+            if len(frame) != 0:
+                frame = frame.reshape((libardrone.ARDRONE_EXT_CAM_HEIGHT, libardrone.ARDRONE_EXT_CAM_WIDTH, 3))  # Notice how height is specified first and then width
+            else:
+                frame = None
+
+            if frame is not None:
+                self.video_pipe.send(frame)
+
+            pipe.stdout.flush()
+
+
 class IPCThread(threading.Thread):
     """Inter Process Communication Thread.
 
@@ -100,18 +147,27 @@ class IPCThread(threading.Thread):
         self.drone = drone
         self.stopping = False
 
+        # configure feeds
+        self.feeds = [self.drone.video_pipe, self.drone.nav_pipe]
+        if libardrone.ARDRONE_EXT_CAM:
+            self.feeds.append(self.drone.ext_video_pipe)
+
     def run(self):
         while not self.stopping:
-            inputready, outputready, exceptready = select.select([self.drone.video_pipe, self.drone.nav_pipe], [], [], 1)
+            inputready, outputready, exceptready = select.select(self.feeds, [], [], 1)
             for i in inputready:
                 if i == self.drone.video_pipe:
                     while self.drone.video_pipe.poll():
                         image = self.drone.video_pipe.recv()
-                    self.drone.image = image
+                    self.drone.int_image = image
                 elif i == self.drone.nav_pipe:
                     while self.drone.nav_pipe.poll():
                         navdata = self.drone.nav_pipe.recv()
                     self.drone.navdata = navdata
+                elif i == self.drone.ext_video_pipe:
+                    while self.drone.ext_video_pipe.poll():
+                        image = self.drone.ext_video_pipe.recv()
+                    self.drone.ext_image = image
 
     def stop(self):
         """Stop the IPCThread activity."""
